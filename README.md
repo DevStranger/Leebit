@@ -8,15 +8,15 @@ A cute and customizable web-based **HLS (HTTP Live Streaming)** player built usi
 
 ### ✅ Must-Have
 
-- ✅ **HLS Playback** – Supports standard `.m3u8` playlist files.
-- ✅ **Playlist Selector** – Dropdown menu with 2–3 predefined HLS playlists.
-- ✅ **Manual Bitrate Switch** – Buttons to change video quality manually.
-- ✅ **Video Info Display** – Shows bitrate, resolution, and audio/video codec info.
+- ✅ **HLS Playback** – Supports standard `.m3u8` playlist files
+- ✅ **Playlist Selector** – Dropdown menu with 2–3 predefined HLS playlists
+- ✅ **Manual Bitrate Switch** – Buttons to change video quality manually
+- ✅ **Video Info Display** – Shows bitrate, resolution, and audio/video codec info
 
 ### ✨ Nice-to-Have
 
-- ✨ **Request Logger** – Displays all streaming segment requests made by the player in real-time.
-- ✨ **GEO-Based Access Control** – Basic IP-based region control using `geoplugin.net`.
+- ✨ **Request Logger** – Displays all streaming segment requests made by the player in real-time
+- ✨ **GEO-Based Access Control** – Basic IP-based region control using `geoplugin.net`
 
 ---
 
@@ -39,7 +39,7 @@ cd leebit-streaming-service
 
 ## 🌐 Serve with Local Web Server
 
-> ⚠️ Due to CORS restrictions, `.m3u8` files must be loaded via HTTP(S) — not directly from `file://`.
+> ⚠️ Due to CORS restrictions, `.m3u8` files must be loaded via HTTP(S) — not directly from `file://`
 
 ### Example using Python HTTP server:
 
