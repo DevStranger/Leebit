@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>💖 Leebit Streaming Service 💖</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&family=Pacifico&display=swap');
+
+    body {
+      font-family: 'Comic Neue', cursive;
+      background: linear-gradient(to bottom, #ffe6f0, #ffd9ec);
+      padding: 30px;
+      color: #d63384;
+      text-align: center;
+    }
+
+    h2 {
+      font-family: 'Pacifico', cursive;
+      color: #ff69b4;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    video {
+      width: 100%;
+      max-width: 720px;
+      border: 5px dashed #ffb6c1;
+      border-radius: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 20px #ffb6c1;
+      margin-top: 20px;
+    }
+
+    select, button {
+      background: #ffc0cb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-size: 1em;
+      font-weight: bold;
+      box-shadow: 0 2px 5px #faa;
+      margin: 10px 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    select:hover, button:hover {
+      background: #ff69b4;
+      transform: scale(1.05);
+    }
+
+    p#info {
+      font-size: 1em;
+      margin-top: 15px;
+      background: #ffeef8;
+      border: 2px dotted #ff99cc;
+      padding: 10px;
+      border-radius: 10px;
+      display: inline-block;
+      max-width: 720px;
+      text-align: left;
+      white-space: pre-line; 
+    }
+
+    #bitrateButtons button {
+      margin: 5px;
+      padding: 8px 12px;
+    }
+
+    #requests {
+      max-width: 720px;
+      margin: 15px auto;
+      background: #fff0f6;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.9em;
+      text-align: left;
+      height: 150px;
+      overflow-y: auto;
+      border: 1px solid #ff99cc;
+    }
+  </style>
+</head>
+<body>
+  <h2>💖 Leebit 💖</h2>
+
+  <select id="playlistSelect">
+    <option value="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8">🌸 Sample Stream 1 🌸</option>
+    <option value="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8">🔥 Sample Stream 2 🔥</option>
+    <option value="https://moose1-hls.live.cdn.bitgravity.com/live/moose1/playlist.m3u8">✨ Sample Stream 3 ✨</option>
+  </select>
+
+  <button onclick="loadSelected()">✨ Load video ✨</button>
+
+  <br />
+
+  <video id="video" controls></video>
+
+  <div id="bitrateButtons"></div>
+
+  <p id="info">Loading... 💫</p>
+
+  <h3>Requests being fetched (on-the-fly):</h3>
+  <div id="requests">No requests yet...</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const video = document.getElementById('video');
+    const info = document.getElementById('info');
+    const playlistSelect = document.getElementById('playlistSelect');
+    const bitrateButtonsDiv = document.getElementById('bitrateButtons');
+    const requestsDiv = document.getElementById('requests');
+
+    let hls;
+    let geoAccessGranted = false;
+
+    // Simulated GEO whitelist check: allow IPs starting with 192
+    async function checkGeoAccess() {
+      try {
+        const response = await fetch('http://www.geoplugin.net/json.gp');
+        const data = await response.json();
+        console.log('GEO data:', data);
+
+        if (data.geoplugin_request && data.geoplugin_request.startsWith('192.')) {
+          geoAccessGranted = true;
+        } else {
+          geoAccessGranted = false;
+        }
+
+        if (!geoAccessGranted) {
+          alert('Access denied: your location is not permitted to view Premium content.');
+        }
+      } catch (e) {
+        console.warn('Could not verify GEO location:', e);
+        geoAccessGranted = true; // fallback: allow
+      }
+    }
+
+    async function loadSelected() {
+      const selected = playlistSelect.value;
+
+      // Check GEO access before loading
+      await checkGeoAccess();
+
+      if (!geoAccessGranted) {
+        info.textContent = 'Access denied for your location.';
+        video.pause();
+        video.src = '';
+        bitrateButtonsDiv.innerHTML = '';
+        return;
+      }
+
+      if (hls) {
+        hls.destroy();
+        bitrateButtonsDiv.innerHTML = '';
+        requestsDiv.textContent = 'No requests yet...';
+      }
+
+      hls = new Hls({
+        debug: false,
+      });
+
+      // Track all requests being made (on-the-fly)
+      hls.on(Hls.Events.FRAG_LOADING, function (event, data) {
+        const url = data.url || data.frag?.url;
+        if (url) {
+          addRequestLog(url);
+        }
+      });
+
+      // Handle level (quality) switching manually
+      hls.on(Hls.Events.MANIFEST_PARSED, function (_, data) {
+        info.textContent = 'Manifest loaded, ' + data.levels.length + ' quality levels found.';
+
+        // Create bitrate buttons
+        bitrateButtonsDiv.innerHTML = '';
+        data.levels.forEach((level, index) => {
+          const btn = document.createElement('button');
+          btn.textContent = `${Math.round(level.bitrate / 1000)} kbps (${level.width}x${level.height})`;
+          btn.onclick = () => {
+            hls.currentLevel = index;
+            updateVideoInfo();
+          };
+          bitrateButtonsDiv.appendChild(btn);
+        });
+
+        // Start with automatic level (default)
+        hls.currentLevel = -1;
+
+        updateVideoInfo();
+      });
+
+      hls.attachMedia(video);
+
+      hls.loadSource(selected);
+
+      // Update info about video and audio codecs on level switch
+      hls.on(Hls.Events.LEVEL_SWITCHED, () => {
+        updateVideoInfo();
+      });
+
+      // When video metadata is loaded, update info
+      video.addEventListener('loadedmetadata', () => {
+        updateVideoInfo();
+      });
+    }
+
+    function updateVideoInfo() {
+      if (!hls || !hls.levels || hls.levels.length === 0) {
+        info.textContent = 'No levels loaded';
+        return;
+      }
+      const levelIndex = hls.currentLevel;
+      let level;
+      if (levelIndex === -1) {
+        // Auto mode: find current level from hls stats
+        level = hls.levels[hls.nextLevel] || hls.levels[0];
+      } else {
+        level = hls.levels[levelIndex];
+      }
+
+      if (!level) {
+        info.textContent = 'No level information available.';
+        return;
+      }
+
+      const videoCodec = level.videoCodec || 'unknown';
+      const audioCodec = level.audioCodec || 'unknown';
+
+      const text = `
+Bitrate: ${Math.round(level.bitrate / 1000)} kbps
+Resolution: ${level.width}x${level.height}
+Video Codec: ${videoCodec}
+Audio Codec: ${audioCodec}
+Current Level Index: ${levelIndex === -1 ? 'Auto' : levelIndex}
+      `.trim();
+
+      info.textContent = text;
+    }
+
+    function addRequestLog(url) {
+      // Append request url with scroll-down
+      if (requestsDiv.textContent === 'No requests yet...') requestsDiv.textContent = '';
+      requestsDiv.textContent += url + '\n';
+      requestsDiv.scrollTop = requestsDiv.scrollHeight;
+    }
+
+    // Load initial playlist on page load
+    loadSelected();
+  </script>
+</body>
+</html>
