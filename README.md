@@ -33,7 +33,7 @@ A cute and customizable web-based **HLS (HTTP Live Streaming)** player built usi
 ### 📁 1. Clone or Download
 
 ```bash
-git clone https://github.com/your-username/leebit-streaming-service.git
+git clone https://github.com/DevStranger/Leebit.git
 cd leebit-streaming-service
 ```
 
